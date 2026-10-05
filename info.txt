@@ -1,0 +1,40 @@
+convertir imagenes
+icon-72x72.png
+icon-96x96.png
+icon-128x128.png
+icon-144x144.png
+icon-152x152.png
+icon-192x192.png
+icon-384x384.png
+icon-512x512.png
+
+Para el dia lunes traer las imagenes y convertir los icnonos    
+
+
+Add-Type -AssemblyName System.Drawing
+$origen = "$PWD\coffee.jpg"
+$imagen = [System.Drawing.Image]::FromFile($origen)
+$tamanos = @(72, 96, 128, 144, 152, 192, 384, 512)
+
+foreach ($size in $tamanos) {
+    $bmp = New-Object System.Drawing.Bitmap($size, $size)
+    $grafico = [System.Drawing.Graphics]::FromImage($bmp)
+    # Usar interpolación de alta calidad para que los íconos pequeños no se pixelen
+    $grafico.InterpolationMode = [System.Drawing.Drawing2D.InterpolationMode]::HighQualityBicubic
+    $grafico.DrawImage($imagen, 0, 0, $size, $size)
+    
+    $nombre = "$PWD\icon-${size}x${size}.png"
+    $bmp.Save($nombre, [System.Drawing.Imaging.ImageFormat]::Png)
+    
+    $grafico.Dispose()
+    $bmp.Dispose()
+    Write-Host "Generado: icon-${size}x${size}.png"
+}
+$imagen.Dispose()
+
+que es un archivo de minifiesto 
+para que se utiliza un serviceworker
+
+
+arquitectura interna de una aplicacion de una PWA
+organizador grafico de galletas
