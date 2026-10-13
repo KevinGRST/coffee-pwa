@@ -1,4 +1,4 @@
-const CACHE_NAME = "coffee-pwa-v10";
+const CACHE_NAME = "coffee-pwa-v1";
 
 const APP_SHELL = [
     "./",
@@ -57,29 +57,49 @@ self.addEventListener("activate", (event) => {
     self.clients.claim();
 });
 
+const isCacheableResponse = (response) =>
+    response && response.status === 200 && response.type === "basic";
+
+const saveResponse = (request, response) => {
+    if (!isCacheableResponse(response)) {
+        return response;
+    }
+
+    const responseToCache = response.clone();
+    caches.open(CACHE_NAME).then((cache) => {
+        cache.put(request, responseToCache);
+    });
+    return response;
+};
+
 self.addEventListener("fetch", (event) => {
     if (event.request.method !== "GET") {
         return;
     }
 
+    // Network-first para documentos: intenta obtener la versión más reciente.
+    if (event.request.mode === "navigate") {
+        event.respondWith(
+            fetch(event.request)
+                .then((networkResponse) =>
+                    saveResponse(event.request, networkResponse)
+                )
+                .catch(() => caches.match(event.request).then((cachedResponse) => {
+                    return cachedResponse || caches.match("./index.html");
+                }))
+        );
+        return;
+    }
+
+    // Cache-first para CSS, JavaScript, imágenes y demás recursos estáticos.
     event.respondWith(
         caches.match(event.request).then((cachedResponse) => {
             if (cachedResponse) {
                 return cachedResponse;
             }
-
-            return fetch(event.request).then((networkResponse) => {
-                if (!networkResponse || networkResponse.status !== 200) {
-                    return networkResponse;
-                }
-
-                const responseToCache = networkResponse.clone();
-                caches.open(CACHE_NAME).then((cache) => {
-                    cache.put(event.request, responseToCache);
-                });
-
-                return networkResponse;
-            });
+            return fetch(event.request).then((networkResponse) =>
+                saveResponse(event.request, networkResponse)
+            );
         })
     );
 });
